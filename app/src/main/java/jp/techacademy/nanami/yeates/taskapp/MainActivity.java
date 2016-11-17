@@ -1,7 +1,10 @@
 package jp.techacademy.nanami.yeates.taskapp;
 
+import android.app.ActionBar;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
+import android.app.SearchManager;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
@@ -10,6 +13,7 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
@@ -24,6 +28,7 @@ import java.util.ArrayList;
 
 import io.realm.Realm;
 import io.realm.RealmChangeListener;
+import io.realm.RealmQuery;
 import io.realm.RealmResults;
 import io.realm.Sort;
 
@@ -31,6 +36,9 @@ public class MainActivity extends AppCompatActivity {
     public final static String EXTRA_TASK = "jp.techacademy.nanami.yeates.taskapp.TASK";
 
     private SearchView searchView;
+    private String newText;
+
+    private SearchManager searchManager;
 
     private Realm mRealm;
     private RealmResults<Task> mTaskRealmResults;
@@ -60,7 +68,6 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
-
 
 
         // Realmの設定
@@ -140,7 +147,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-
     private void reloadListView() {
 
         ArrayList<Task> taskArrayList = new ArrayList<>();
@@ -168,24 +174,61 @@ public class MainActivity extends AppCompatActivity {
 
         mRealm.close();
     }
+
+    //SearchView呼び出し
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
 
         getMenuInflater().inflate(R.menu.menu_search, menu);
-        getMenuInflater().inflate(R.menu.menu_main, menu);
+        //getMenuInflater().inflate(R.menu.menu_main, menu);
         MenuItem searchItem = menu.findItem(R.id.searchView);
 
-        try {
 
-            searchView = (SearchView) MenuItemCompat.getActionView(searchItem);
-        }catch (NullPointerException e){
-            Log.d("javatest","例外発生");
-        }
+        searchView = (SearchView) MenuItemCompat.getActionView(searchItem);
+        this.searchView.setSubmitButtonEnabled(true);
+        SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
+        searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
+
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+
+                return false;
+            }
+
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+
+                if (TextUtils.isEmpty(newText)) {
+                    mListView.clearTextFilter();
+                } else {
+                    mListView.setFilterText(newText.toString());
+                }
+
+                mTaskRealmResults = mRealm.where(Task.class).contains("category", newText).findAll();
+
+                reloadListView();
+
+                return false;
+            }
+        });
+
+
+
 
         return true;
     }
 
 
 }
+
+
+
+
+
+
+
+
 
 
